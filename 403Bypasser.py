@@ -187,35 +187,36 @@ class BurpExtender(IBurpExtender, IScannerCheck, IContextMenuFactory, ITab):
 		# Double URL encode slashes
 		payloads.append(path.replace("/", "%252F"))
 
-		OGpathSegments = path.split("/")
-		
 		# URL encode the first character of each path segment
-		for i in range(len(OGpathSegments)):
-			newPathSegments = OGpathSegments[:]
-			if OGpathSegments[i]:
-				newPathSegments[i] = "%{0:0>2x}".format(ord(newPathSegments[i][0]))+newPathSegments[i][1:]
-				payloads.append("/".join(newPathSegments))
+		for i in self.findAllCharIndexesInString(path, "/"):
+			pathWithPayload = path[:i] + "/%{0:0>2x}".format(ord(path[i+1])) + path[i+2:]
+			payloads.append(pathWithPayload)
 
 		# URL encode the last character of each path segment
-		for i in range(len(OGpathSegments)):
-			newPathSegments = OGpathSegments[:]
-			if OGpathSegments[i]:
-				newPathSegments[i] = newPathSegments[i][:-1]+"%{0:0>2x}".format(ord(newPathSegments[i][-1]))
-				payloads.append("/".join(newPathSegments))
+		for i in self.findAllCharIndexesInString(path, "/")[1:]:
+			pathWithPayload = path[:i-1] + "%{0:0>2x}".format(ord(path[i-1])) + "/" + path[i+1:]
+			payloads.append(pathWithPayload)
 
-		# Double URL encode first character of each path segment
-		for i in range(len(OGpathSegments)):
-			newPathSegments = OGpathSegments[:]
-			if OGpathSegments[i]:
-				newPathSegments[i] = "%25{0:0>2x}".format(ord(newPathSegments[i][0]))+newPathSegments[i][1:]
-				payloads.append("/".join(newPathSegments))
+		payloads.append(path[:-1] + "%{0:0>2x}".format(ord(path[-1])))
 
-		# Double URL encode last character of each path segment
-		for i in range(len(OGpathSegments)):
-			newPathSegments = OGpathSegments[:]
-			if OGpathSegments[i]:
-				newPathSegments[i] = newPathSegments[i][:-1]+"%25{0:0>2x}".format(ord(newPathSegments[i][-1]))
-				payloads.append("/".join(newPathSegments))
+		# # Double URL encode first character of each path segment
+		for i in self.findAllCharIndexesInString(path, "/"):
+			pathWithPayload = path[:i] + "/%25{0:0>2x}".format(ord(path[i+1])) + path[i+2:]
+			payloads.append(pathWithPayload)
+
+		# # Double URL encode last character of each path segment
+		for i in self.findAllCharIndexesInString(path, "/")[1:]:
+			pathWithPayload = path[:i-1] + "%25{0:0>2x}".format(ord(path[i-1])) + "/" + path[i+1:]
+			payloads.append(pathWithPayload)
+
+		payloads.append(path[:-1] + "%25{0:0>2x}".format(ord(path[-1])))
+		
+		# some normalization thing with %ef%bc%8f - this should be some / equivalent ...
+		for i in self.findAllCharIndexesInString(path, "/"):
+			pathWithPayload = path[:i] + "%ef%bc%8f" + path[i+1:]
+			payloads.append(pathWithPayload)
+
+		payloads.append(path + "%ef%bc%8f")
 
 		# Try adding extensions
 		nPath = path
