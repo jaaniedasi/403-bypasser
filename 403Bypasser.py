@@ -6,6 +6,7 @@ from java.awt import BorderLayout
 import java.util.ArrayList as ArrayList
 import java.lang.String as String
 from java.lang import Short
+from urllib import quote
 
 import thread
 
@@ -247,6 +248,24 @@ class BurpExtender(IBurpExtender, IScannerCheck, IContextMenuFactory, ITab):
 		#generate payloads at the end of the path
 		payloads.append(path + "/" + payload)
 		payloads.append(path + "/" + payload + "/")
+
+		# URL encode slashes
+		payloads.append(self.helpers.urlEncode(path))
+
+		# Double URL encode slashes
+		payloads.append(path.replace("/", "%252F"))
+
+		pathSegments = path.split("/")
+		
+		# URL encode the first character of each path segment
+		for i in range(len(pathSegments)):
+			pathSegments[i] = quote(pathSegments[i][0]) + pathSegments[i][1:]
+		payloads.append("/".join(pathSegments))
+
+		# URL encode the last character of each path segment
+		for i in range(len(pathSegments)):
+			pathSegments[i] = pathSegments[i][:-1] + quote(pathSegments[i][-1])
+		payloads.append("/".join(pathSegments))
 
 		return payloads
 
