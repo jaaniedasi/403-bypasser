@@ -6,15 +6,11 @@ from java.awt import BorderLayout
 import java.util.ArrayList as ArrayList
 import java.lang.String as String
 from java.lang import Short
-from urllib import quote
 
 import thread
 
 queryPayloadsFile = open('query payloads.txt', "r")
 queryPayloadsFromFile = queryPayloadsFile.readlines()
-
-headerPayloadsFile = open('header payloads.txt', "r")
-headerPayloadsFromFile = headerPayloadsFile.readlines()
 
 extentionName = "403 Bypasser"
 requestNum = 2
@@ -44,29 +40,6 @@ class uiTab(JFrame):
 		if requestNum > 2:
 			requestNum -= 1
 
-	def headerAddButtonClicked(self, event):
-		textFieldValue = self.headerPayloadsAddPayloadTextField.getText()
-
-		if textFieldValue != "":
-			tableModel = self.headerPayloadsTable.getModel()
-			tableModel.addRow([textFieldValue])
-		self.headerPayloadsAddPayloadTextField.setText("")
-
-	def headerClearButtonClicked(self, event):
-		global requestNum
-		requestNum = 2
-		tableModel = self.headerPayloadsTable.getModel()
-		tableModel.setRowCount(0)
-
-	def headerRemoveButtonClicked(self, event):
-		tableModel = self.headerPayloadsTable.getModel()
-		selectedRows = self.headerPayloadsTable.getSelectedRows()
-		for row in selectedRows:
-			tableModel.removeRow(row)
-		global requestNum
-		if requestNum > 2:
-			requestNum -= 1
-
 	def __init__(self):
 		self.queryPayloadsLabel = JLabel()
 		self.jScrollPane1 = JScrollPane()
@@ -76,14 +49,6 @@ class uiTab(JFrame):
 		self.queryPayloadsClearButton = JButton("Clear", actionPerformed=self.queryClearButtonClicked)
 		self.queryPayloadsRemoveButton = JButton("Remove", actionPerformed=self.queryRemoveButtonClicked)
 
-		self.headerPayloadsLabel = JLabel()
-		self.jScrollPane2 = JScrollPane()
-		self.headerPayloadsTable = JTable()
-		self.headerPayloadsAddPayloadTextField = JTextField()
-		self.headerPayloadsAddButton = JButton("Add", actionPerformed=self.headerAddButtonClicked)
-		self.headerPayloadsClearButton = JButton("Clear", actionPerformed=self.headerClearButtonClicked)
-		self.headerPayloadsRemoveButton = JButton("Remove", actionPerformed=self.headerRemoveButtonClicked)
-
 		self.panel = JPanel()
 
 		self.queryPayloadsLabel.setText("Query Payloads")
@@ -92,28 +57,13 @@ class uiTab(JFrame):
 		for queryPayload in queryPayloadsFromFile:
 			queryTableData.append([queryPayload])
 
-		headerTableData = []
-		for headerPayload in headerPayloadsFromFile:
-			headerTableData.append([headerPayload])
-
 		queryTableColumns = [None]
 		queryTableModel = table.DefaultTableModel(queryTableData,queryTableColumns)
 		self.queryPayloadsTable.setModel(queryTableModel)
-		self.queryPayloadsTable.getTableHeader().setUI(None)
 
 		self.jScrollPane1.setViewportView(self.queryPayloadsTable)
 
 		self.jScrollPane1.setViewportView(self.queryPayloadsTable)
-
-		self.headerPayloadsLabel.setText("Header Payloads")
-
-		headerTableColumns = [None]
-		headerTableModel = table.DefaultTableModel(headerTableData,headerTableColumns)
-		self.headerPayloadsTable.setModel(headerTableModel)
-		self.headerPayloadsTable.getTableHeader().setUI(None)
-		self.jScrollPane2.setViewportView(self.headerPayloadsTable)
-
-
 
 		layout = GroupLayout(self.panel)
 		self.panel.setLayout(layout)
@@ -132,15 +82,6 @@ class uiTab(JFrame):
 					.addComponent(self.queryPayloadsAddPayloadTextField)
 					.addComponent(self.jScrollPane1, GroupLayout.PREFERRED_SIZE, 107, GroupLayout.PREFERRED_SIZE))
 				.addGap(100, 100, 100)
-				.addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING, False)
-					.addComponent(self.headerPayloadsAddButton, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-					.addComponent(self.headerPayloadsRemoveButton, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-					.addComponent(self.headerPayloadsClearButton, GroupLayout.PREFERRED_SIZE, 93, GroupLayout.PREFERRED_SIZE))
-				.addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-				.addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING, False)
-					.addComponent(self.headerPayloadsLabel)
-					.addComponent(self.headerPayloadsAddPayloadTextField)
-					.addComponent(self.jScrollPane2, GroupLayout.PREFERRED_SIZE, 107, GroupLayout.PREFERRED_SIZE))
 				.addGap(0, 483, Short.MAX_VALUE))
 		)
 		layout.setVerticalGroup(
@@ -148,19 +89,6 @@ class uiTab(JFrame):
 			.addGroup(layout.createSequentialGroup()
 				.addGap(17, 17, 17)
 				.addGroup(layout.createParallelGroup(GroupLayout.Alignment.TRAILING)
-					.addGroup(layout.createSequentialGroup()
-						.addComponent(self.headerPayloadsLabel)
-						.addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-						.addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-							.addComponent(self.jScrollPane2, GroupLayout.PREFERRED_SIZE, 195, GroupLayout.PREFERRED_SIZE)
-							.addGroup(layout.createSequentialGroup()
-								.addComponent(self.headerPayloadsClearButton)
-								.addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-								.addComponent(self.headerPayloadsRemoveButton)))
-						.addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-						.addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-							.addComponent(self.headerPayloadsAddPayloadTextField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-							.addComponent(self.headerPayloadsAddButton)))
 					.addGroup(layout.createSequentialGroup()
 						.addComponent(self.queryPayloadsLabel)
 						.addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
@@ -227,7 +155,7 @@ class BurpExtender(IBurpExtender, IScannerCheck, IContextMenuFactory, ITab):
 	def findAllCharIndexesInString(self,s, ch):
 		return [i for i, ltr in enumerate(s) if ltr == ch]
 
-	def generatePayloads(self, path, payload):
+	def generatePayloadsFromFile(self, path, payload):
 		payloads = []
 
 		#generate payloads before slash
@@ -249,32 +177,69 @@ class BurpExtender(IBurpExtender, IScannerCheck, IContextMenuFactory, ITab):
 		payloads.append(path + "/" + payload)
 		payloads.append(path + "/" + payload + "/")
 
+		return payloads
+
+	def generateAdditionalPayloads(self, path, payloads):
+		payloads = []
 		# URL encode slashes
-		payloads.append(self.helpers.urlEncode(path))
+		payloads.append(path.replace("/", "%2F"))
 
 		# Double URL encode slashes
 		payloads.append(path.replace("/", "%252F"))
 
-		pathSegments = path.split("/")
+		OGpathSegments = path.split("/")
 		
 		# URL encode the first character of each path segment
-		for i in range(len(pathSegments)):
-			pathSegments[i] = quote(pathSegments[i][0]) + pathSegments[i][1:]
-		payloads.append("/".join(pathSegments))
+		for i in range(len(OGpathSegments)):
+			newPathSegments = OGpathSegments[:]
+			if OGpathSegments[i]:
+				newPathSegments[i] = "%{0:0>2x}".format(ord(newPathSegments[i][0]))+newPathSegments[i][1:]
+				payloads.append("/".join(newPathSegments))
 
 		# URL encode the last character of each path segment
-		for i in range(len(pathSegments)):
-			pathSegments[i] = pathSegments[i][:-1] + quote(pathSegments[i][-1])
-		payloads.append("/".join(pathSegments))
+		for i in range(len(OGpathSegments)):
+			newPathSegments = OGpathSegments[:]
+			if OGpathSegments[i]:
+				newPathSegments[i] = newPathSegments[i][:-1]+"%{0:0>2x}".format(ord(newPathSegments[i][-1]))
+				payloads.append("/".join(newPathSegments))
+
+		# Double URL encode first character of each path segment
+		for i in range(len(OGpathSegments)):
+			newPathSegments = OGpathSegments[:]
+			if OGpathSegments[i]:
+				newPathSegments[i] = "%25{0:0>2x}".format(ord(newPathSegments[i][0]))+newPathSegments[i][1:]
+				payloads.append("/".join(newPathSegments))
+
+		# Double URL encode last character of each path segment
+		for i in range(len(OGpathSegments)):
+			newPathSegments = OGpathSegments[:]
+			if OGpathSegments[i]:
+				newPathSegments[i] = newPathSegments[i][:-1]+"%25{0:0>2x}".format(ord(newPathSegments[i][-1]))
+				payloads.append("/".join(newPathSegments))
+
+		# Try adding extensions
+		nPath = path
+		
+		withOutExtension = path.split(".")
+
+		if withOutExtension:
+			nPath = withOutExtension[0]
+
+		ext = [".js", ".json", ".css", ".html"]
+
+		for e in ext:
+			payloads.append(nPath+e)
+
+		# TODO: combining shit?
 
 		return payloads
 
-	def tryBypassWithQueryPayload(self, request, payload, httpService):
+	def tryBypassWithQueryPayload(self, request, httpService, generateFunction, payload=''):
 		results = []
 		#each result element is an array of [detail,httpMessage]
 
 		requestPath = request.getUrl().getPath()
-		payloads = self.generatePayloads(requestPath, payload)
+		payloads = generateFunction(requestPath, payload)
 
 
 		originalRequest = self.helpers.bytesToString(request.getRequest())
@@ -308,53 +273,6 @@ class BurpExtender(IBurpExtender, IScannerCheck, IContextMenuFactory, ITab):
 				issue.append(newRequestResult)
 				results.append(issue)
 				requestNum += 1
-
-		if len(results) > 0:
-			return results
-		else:
-			return None
-
-	def tryBypassWithHeaderPayload(self, baseRequestResponse, payload, httpService):
-		results = []
-		#each result element is an array of [detail,httpMessage]
-
-		headerAlreadyAdded = False
-		requestInfo = self.helpers.analyzeRequest(baseRequestResponse)
-		headers = requestInfo.getHeaders()
-		for index, header in enumerate(headers):
-			if header.split(" ")[0].lower() == payload.split(" ")[0].lower(): #if header already exist
-				headers[index] = payload
-				headerAlreadyAdded = True
-
-		if headerAlreadyAdded == False:
-			headers.append(payload)
-
-		requestBody = baseRequestResponse.getRequest()[requestInfo.getBodyOffset():]
-		
-
-		headersAsJavaSublist = ArrayList()
-		for header in headers:
-			headersAsJavaSublist.add(String(header))
-
-		newRequest = self.helpers.buildHttpMessage(headersAsJavaSublist, requestBody)
-		newRequestResult = self.callbacks.makeHttpRequest(httpService, newRequest)
-		newRequestStatusCode = str(self.helpers.analyzeResponse(newRequestResult.getResponse()).getStatusCode())
-
-		if newRequestStatusCode == "200":
-			originalRequestUrl = str(baseRequestResponse.getUrl())
-			responseHeaders = str(self.helpers.analyzeResponse(newRequestResult.getResponse()).getHeaders()).split(",")
-			resultContentLength = "No CL in response"
-			for header in responseHeaders:
-				if "Content-Length: " in header:
-					resultContentLength = header[17:]
-					if resultContentLength[-1] == ']': # happens if CL header is the last header in response
-						resultContentLength = resultContentLength.rstrip(']')
-
-			issue = []
-
-			issue.append("<tr><td>" + str(requestNum) + "</td><td>" + originalRequestUrl + "</td><td>" + payload + "</td> <td>" + newRequestStatusCode + "</td> <td>" + resultContentLength + "</td></tr>")
-			issue.append(newRequestResult)
-			results.append(issue)
 
 		if len(results) > 0:
 			return results
@@ -457,7 +375,6 @@ class BurpExtender(IBurpExtender, IScannerCheck, IContextMenuFactory, ITab):
 
 	def testRequest(self, baseRequestResponse):
 		queryPayloadsResults = []
-		headerPayloadsResults = []
 		findings = []
 		httpService = baseRequestResponse.getHttpService()
 
@@ -468,9 +385,12 @@ class BurpExtender(IBurpExtender, IScannerCheck, IContextMenuFactory, ITab):
 
 		for payload in queryPayloadsFromTable:
 			payload = payload.rstrip('\n')
-			result = self.tryBypassWithQueryPayload(baseRequestResponse, payload, httpService)
+			result = self.tryBypassWithQueryPayload(baseRequestResponse, httpService, self.generatePayloadsFromFile, payload)
 			if result != None:
 				queryPayloadsResults += result
+
+
+		additionalResults = self.tryBypassWithQueryPayload(baseRequestResponse, httpService, self.generateAdditionalPayloads)
 
 		#process query-based results
 		if len(queryPayloadsResults) > 0:
@@ -490,42 +410,6 @@ class BurpExtender(IBurpExtender, IScannerCheck, IContextMenuFactory, ITab):
 				issueHttpMessages,
 				"Possible 403 Bypass",
 				"<table><tr><td>Request #</td><td>URL</td><td>Status Code</td><td>Content Length</td></tr>" + "".join(issueDetails) + "</table>",
-				"High",
-				)
-				)
-
-		#test for header-based issues
-		global requestNum
-		requestNum = 2
-
-		headerPayloadsFromTable = []
-		for rowIndex in range(self.frm.headerPayloadsTable.getRowCount()):
-			headerPayloadsFromTable.append(str(self.frm.headerPayloadsTable.getValueAt(rowIndex, 0)))
-
-		for payload in headerPayloadsFromTable:
-			payload = payload.rstrip('\n')
-			result = self.tryBypassWithHeaderPayload(baseRequestResponse, payload, httpService)
-			if result != None:
-				headerPayloadsResults += result
-
-		#process header-based results
-
-		if len(headerPayloadsResults) > 0:
-			issueDetails = []
-			issueHttpMessages = []
-			issueHttpMessages.append(baseRequestResponse)
-
-			for issue in headerPayloadsResults:
-				issueDetails.append(issue[0])
-				issueHttpMessages.append(issue[1])
-
-			findings.append(
-				CustomScanIssue(
-				httpService,
-				self.helpers.analyzeRequest(baseRequestResponse).getUrl(),
-				issueHttpMessages,
-				"Possible 403 Bypass - Header Based",
-				"<table><tr><td>Request #</td><td>URL</td><td>Header</td><td>Status Code</td><td>Content Length</td></tr>" + "".join(issueDetails) + "</table>",
 				"High",
 				)
 				)
@@ -578,8 +462,10 @@ class BurpExtender(IBurpExtender, IScannerCheck, IContextMenuFactory, ITab):
 				)
 
 		if findings:
+			print("Done and found something!")
 			return findings
 		else:
+			print("Done and did not finding anything!")
 			return None
 
 
